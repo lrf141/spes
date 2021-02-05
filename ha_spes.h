@@ -47,14 +47,14 @@
 #include "thr_lock.h"    /* THR_LOCK, THR_LOCK_DATA */
 
 /** @brief
-  Example_share is a class that will be shared among all open handlers.
+  Spes_share is a class that will be shared among all open handlers.
   This spes implements the minimum of what you will probably need.
 */
-class Example_share : public Handler_share {
+class Spes_share : public Handler_share {
  public:
   THR_LOCK lock;
-  Example_share();
-  ~Example_share() override { thr_lock_delete(&lock); }
+  Spes_share();
+  ~Spes_share() override { thr_lock_delete(&lock); }
 };
 
 /** @brief
@@ -62,8 +62,8 @@ class Example_share : public Handler_share {
 */
 class ha_spes : public handler {
   THR_LOCK_DATA lock;          ///< MySQL lock
-  Example_share *share;        ///< Shared lock info
-  Example_share *get_share();  ///< Get the share
+  Spes_share *share;        ///< Shared lock info
+  Spes_share *get_share();  ///< Get the share
 
  public:
   ha_spes(handlerton *hton, TABLE_SHARE *table_arg);
@@ -72,7 +72,7 @@ class ha_spes : public handler {
   /** @brief
     The name that will be used for display purposes.
    */
-  const char *table_type() const override { return "EXAMPLE"; }
+  const char *table_type() const override { return "Spes"; }
 
   /**
     Replace key algorithm with one supported by SE, return the default key

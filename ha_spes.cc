@@ -39,7 +39,7 @@
   --with-spes-storage-engine
 
   Once this is done, MySQL will let you create tables with:<br>
-  CREATE TABLE \<table name\> (...) ENGINE=EXAMPLE;
+  CREATE TABLE \<table name\> (...) ENGINE=Spes;
 
   The spes storage engine is set up to use table locks. It
   implements an spes "SHARE" that is inserted into a hash by table
@@ -51,7 +51,7 @@
   of this file.
 
   @note
-  When you create an EXAMPLE table, the MySQL Server creates a table .frm
+  When you create an Spes table, the MySQL Server creates a table .frm
   (format) file in the database directory, using the table name as the file
   name as is customary with MySQL. No other files are created. To get an idea
   of what occurs, here is an spes select that would do a scan of an entire
@@ -84,7 +84,7 @@
   ha_spes::open() would also have been necessary. Calls to
   ha_spes::extra() are hints as to what will be occurring to the request.
 
-  A Longer Example can be found called the "Skeleton Engine" which can be
+  A Longer Spes can be found called the "Skeleton Engine" which can be
   found on TangentOrg. It has both an engine and a full build environment
   for building a pluggable storage engine.
 
@@ -110,7 +110,7 @@ static bool spes_is_supported_system_table(const char *db,
                                               const char *table_name,
                                               bool is_sql_layer_system_table);
 
-Example_share::Example_share() { thr_lock_init(&lock); }
+Spes_share::Spes_share() { thr_lock_init(&lock); }
 
 static int spes_init_func(void *p) {
   DBUG_TRACE;
@@ -126,20 +126,20 @@ static int spes_init_func(void *p) {
 
 /**
   @brief
-  Example of simple lock controls. The "share" it creates is a
+  Spes of simple lock controls. The "share" it creates is a
   structure we will pass to each spes handler. Do you have to have
   one of these? Well, you have pieces that are used for locking, and
   they are needed to function.
 */
 
-Example_share *ha_spes::get_share() {
-  Example_share *tmp_share;
+Spes_share *ha_spes::get_share() {
+  Spes_share *tmp_share;
 
   DBUG_TRACE;
 
   lock_shared_ha_data();
-  if (!(tmp_share = static_cast<Example_share *>(get_ha_share_ptr()))) {
-    tmp_share = new Example_share;
+  if (!(tmp_share = static_cast<Spes_share *>(get_ha_share_ptr()))) {
+    tmp_share = new Spes_share;
     if (!tmp_share) goto err;
 
     set_ha_share_ptr(static_cast<Handler_share *>(tmp_share));
@@ -251,7 +251,7 @@ int ha_spes::close(void) {
   information to extract the data from the native byte array type.
 
   @details
-  Example of this would be:
+  Spes of this would be:
   @code
   for (Field **field=table->field ; *field ; field++)
   {
@@ -277,7 +277,7 @@ int ha_spes::close(void) {
 int ha_spes::write_row(uchar *) {
   DBUG_TRACE;
   /*
-    Example of a successful write_row. We don't store the data
+    Spes of a successful write_row. We don't store the data
     anywhere; they are thrown away. A real implementation will
     probably need to do something with 'buf'. We report a success
     here, to pretend that the insert was successful.
