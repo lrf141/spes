@@ -99,6 +99,8 @@
 #include "sql/sql_class.h"
 #include "sql/sql_plugin.h"
 #include "typelib.h"
+#include "sql/table.h"
+#include "sql/field.h"
 
 static handler *spes_create_handler(handlerton *hton, TABLE_SHARE *table,
                                        bool partitioned, MEM_ROOT *mem_root);
@@ -741,7 +743,6 @@ int ha_spes::create(const char *name, TABLE *, HA_CREATE_INFO *,
                        dd::Table *) {
   DBUG_TRACE;
 
-  DBUG_ENTER("ha_spes::create");
   File create_file;
   if ((create_file
        = my_create(name, 0, O_RDWR | O_TRUNC, MYF(0))) < 0) {
