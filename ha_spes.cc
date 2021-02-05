@@ -745,13 +745,11 @@ int ha_spes::create(const char *name, TABLE *, HA_CREATE_INFO *,
   File create_file;
   if ((create_file
        = my_create(name, 0, O_RDWR | O_TRUNC, MYF(0))) < 0) {
-    // TODO: add error return
-    DBUG_RETURN(-1);
+    return -1;
   }
 
   if ((my_close(create_file, MYF(0))) < 0) {
-    // TODO: add error return
-    DBUG_RETURN(-1);
+    return -1;
   }
 
   /*
