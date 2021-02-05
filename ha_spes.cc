@@ -740,10 +740,19 @@ static MYSQL_THDVAR_UINT(create_count_thdvar, 0, nullptr, nullptr, nullptr, 0,
 int ha_spes::create(const char *name, TABLE *, HA_CREATE_INFO *,
                        dd::Table *) {
   DBUG_TRACE;
-  /*
-    This is not implemented but we want someone to be able to see that it
-    works.
-  */
+
+  DBUG_ENTER("ha_spes::create");
+  File create_file;
+  if ((create_file
+       = my_create(name, 0, O_RDWR | O_TRUNC, MYF(0))) < 0) {
+    // TODO: add error return
+    DBUG_RETURN(-1);
+  }
+
+  if ((my_close(create_file, MYF(0))) < 0) {
+    // TODO: add error return
+    DBUG_RETURN(-1);
+  }
 
   /*
     It's just an spes of THDVAR_SET() usage below.
