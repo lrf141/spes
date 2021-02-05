@@ -1,2 +1,2 @@
-# mysql-spes
+# spes
 simple mysql storage engine
