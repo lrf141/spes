@@ -99,6 +99,8 @@
 #include "sql/sql_class.h"
 #include "sql/sql_plugin.h"
 #include "typelib.h"
+#include "sql/table.h"
+#include "sql/field.h"
 
 static handler *spes_create_handler(handlerton *hton, TABLE_SHARE *table,
                                        bool partitioned, MEM_ROOT *mem_root);
@@ -740,10 +742,16 @@ static MYSQL_THDVAR_UINT(create_count_thdvar, 0, nullptr, nullptr, nullptr, 0,
 int ha_spes::create(const char *name, TABLE *, HA_CREATE_INFO *,
                        dd::Table *) {
   DBUG_TRACE;
-  /*
-    This is not implemented but we want someone to be able to see that it
-    works.
-  */
+
+  File create_file;
+  if ((create_file
+       = my_create(name, 0, O_RDWR | O_TRUNC, MYF(0))) < 0) {
+    return -1;
+  }
+
+  if ((my_close(create_file, MYF(0))) < 0) {
+    return -1;
+  }
 
   /*
     It's just an spes of THDVAR_SET() usage below.
