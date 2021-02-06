@@ -670,9 +670,10 @@ THR_LOCK_DATA **ha_spes::store_lock(THD *, THR_LOCK_DATA **to,
   @see
   delete_table and ha_create_table() in handler.cc
 */
-int ha_spes::delete_table(const char *, const dd::Table *) {
+int ha_spes::delete_table(const char *name, const dd::Table *) {
   DBUG_TRACE;
-  /* This is not implemented but we want someone to be able that it works. */
+  if (my_delete(name, MYF(0)) < 0)
+    return -1;
   return 0;
 }
 
