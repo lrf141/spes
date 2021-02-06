@@ -36,6 +36,7 @@ CMakeFiles
 *.cmake
 Makefile
 cmake-build-debug/
+CMakeCache.txt
 
 # CLion, JetBrain
 .idea/
