@@ -45,6 +45,7 @@
 #include "my_inttypes.h"
 #include "sql/handler.h" /* handler */
 #include "thr_lock.h"    /* THR_LOCK, THR_LOCK_DATA */
+#include "sql_string.h"
 
 /** @brief
   Spes_share is a class that will be shared among all open handlers.
@@ -54,6 +55,7 @@ class Spes_share : public Handler_share {
  public:
   THR_LOCK lock;
   File table_file;
+  const char *name;
   Spes_share();
   ~Spes_share() override { thr_lock_delete(&lock); }
 };
