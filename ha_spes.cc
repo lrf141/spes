@@ -217,12 +217,17 @@ static bool spes_is_supported_system_table(const char *db,
   handler::ha_open() in handler.cc
 */
 
-int ha_spes::open(const char *, int, uint, const dd::Table *) {
+int ha_spes::open(const char *name, int, uint, const dd::Table *) {
   DBUG_TRACE;
 
+  File open_file;
   if (!(share = get_share())) return 1;
   thr_lock_data_init(&share->lock, &lock, nullptr);
 
+  if ((open_file = my_open(name, O_RDWR, MYF(0))) < 0)
+    return -1;
+  share->table_file = open_file;
+  share->name = name;
   return 0;
 }
 
@@ -278,12 +283,40 @@ int ha_spes::close(void) {
 
 int ha_spes::write_row(uchar *) {
   DBUG_TRACE;
-  /*
-    Spes of a successful write_row. We don't store the data
-    anywhere; they are thrown away. A real implementation will
-    probably need to do something with 'buf'. We report a success
-    here, to pretend that the insert was successful.
-  */
+  ha_statistic_increment(&System_status_var::ha_write_count);
+
+  // TODO: maybe delete my_open function
+  if (share->table_file <= 0) {
+    File open_file;
+    if ((open_file = my_open(share->name, O_RDWR, MYF(0))) < 0)
+      return -1;
+    share->table_file = open_file;
+  }
+
+  char att_buf[1024];
+  String rowBuffer;
+  String attribute(att_buf, sizeof(att_buf), &my_charset_bin);
+  my_bitmap_map *org_bitmap = tmp_use_all_columns(table, table->read_set);
+  rowBuffer.length(0);
+
+  for (Field **field = table->field; *field; field++) {
+    const char *p;
+    const char *end;
+    (*field)->val_str(&attribute, &attribute);
+    p = attribute.ptr();
+    end = attribute.length() + p;
+    rowBuffer.append('"');
+    for (; p < end; p++)
+      rowBuffer.append(*p);
+    rowBuffer.append('"');
+    rowBuffer.append(',');
+  }
+  rowBuffer.length(rowBuffer.length() - 1);
+  rowBuffer.append('\n');
+  tmp_restore_column_map(table->read_set, org_bitmap);
+  int size = rowBuffer.length();
+  my_write(share->table_file, (uchar *)rowBuffer.ptr(), size, MYF(0));
+
   return 0;
 }
 
@@ -429,6 +462,8 @@ int ha_spes::index_last(uchar *) {
 */
 int ha_spes::rnd_init(bool) {
   DBUG_TRACE;
+  current_position = 0;
+  stats.records = 0;
   return 0;
 }
 
@@ -452,11 +487,56 @@ int ha_spes::rnd_end() {
   filesort.cc, records.cc, sql_handler.cc, sql_select.cc, sql_table.cc and
   sql_update.cc
 */
-int ha_spes::rnd_next(uchar *) {
-  int rc;
+int ha_spes::rnd_next(uchar *buf) {
   DBUG_TRACE;
-  rc = HA_ERR_END_OF_FILE;
-  return rc;
+  int err;
+  ha_statistic_increment(&System_status_var::ha_read_rnd_next_count);
+  err = find_current_row(buf);
+  if (!err)
+    stats.records++;
+  return err;
+}
+
+int ha_spes::find_current_row(uchar *buf) {
+  DBUG_TRACE;
+
+  my_bitmap_map *org_bitmap = tmp_use_all_columns(table, table->write_set);
+  uchar read_buf[IO_SIZE];
+  String rowBuffer;
+  bool is_end;
+  uchar *p;
+  uchar current_char;
+  uint bytes_read;
+
+  memset(buf, 0, table->s->null_bytes);
+  for (Field **field = table->field; *field; field++) {
+    bytes_read = my_pread(share->table_file, read_buf, sizeof(read_buf), current_position, MYF(0));
+    if (!bytes_read) {
+      tmp_restore_column_map(table->write_set, org_bitmap);
+      return HA_ERR_END_OF_FILE;
+    }
+    p = read_buf;
+    current_char = *p;
+    rowBuffer.length(0);
+    is_end = false;
+
+    for (;;) {
+      if (current_char == '"') {
+        if (is_end) {
+          current_position += 2;
+          break;
+        }
+        is_end = true;
+      } else {
+        rowBuffer.append(current_char);
+      }
+      current_char = *++p;
+      current_position++;
+    }
+    (*field)->store(rowBuffer.ptr(), rowBuffer.length(), rowBuffer.charset());
+  }
+  tmp_restore_column_map(table->write_set, org_bitmap);
+  return 0;
 }
 
 /**
@@ -543,6 +623,8 @@ int ha_spes::rnd_pos(uchar *, uchar *) {
 */
 int ha_spes::info(uint) {
   DBUG_TRACE;
+  if (stats.records < 2)
+    stats.records = 2;
   return 0;
 }
 

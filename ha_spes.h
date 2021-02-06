@@ -45,6 +45,7 @@
 #include "my_inttypes.h"
 #include "sql/handler.h" /* handler */
 #include "thr_lock.h"    /* THR_LOCK, THR_LOCK_DATA */
+#include "sql_string.h"
 
 /** @brief
   Spes_share is a class that will be shared among all open handlers.
@@ -53,6 +54,8 @@
 class Spes_share : public Handler_share {
  public:
   THR_LOCK lock;
+  File table_file;
+  const char *name;
   Spes_share();
   ~Spes_share() override { thr_lock_delete(&lock); }
 };
@@ -64,6 +67,7 @@ class ha_spes : public handler {
   THR_LOCK_DATA lock;          ///< MySQL lock
   Spes_share *share;        ///< Shared lock info
   Spes_share *get_share();  ///< Get the share
+  off_t current_position;
 
  public:
   ha_spes(handlerton *hton, TABLE_SHARE *table_arg);
@@ -97,7 +101,8 @@ class ha_spes : public handler {
       an engine that can only handle statement-based logging. This is
       used in testing.
     */
-    return HA_BINLOG_STMT_CAPABLE;
+    // change STMT -> ROW
+    return HA_BINLOG_ROW_CAPABLE;
   }
 
   /** @brief
@@ -251,6 +256,7 @@ class ha_spes : public handler {
   int rnd_init(bool scan) override;  // required
   int rnd_end() override;
   int rnd_next(uchar *buf) override;             ///< required
+  int find_current_row(uchar *buf);
   int rnd_pos(uchar *buf, uchar *pos) override;  ///< required
   void position(const uchar *record) override;   ///< required
   int info(uint) override;                       ///< required
