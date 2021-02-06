@@ -217,12 +217,16 @@ static bool spes_is_supported_system_table(const char *db,
   handler::ha_open() in handler.cc
 */
 
-int ha_spes::open(const char *, int, uint, const dd::Table *) {
+int ha_spes::open(const char *name, int, uint, const dd::Table *) {
   DBUG_TRACE;
 
+  File open_file;
   if (!(share = get_share())) return 1;
   thr_lock_data_init(&share->lock, &lock, nullptr);
 
+  if ((open_file = my_open(name, O_RDWR, MYF(0))) < 0)
+    return -1;
+  share->table_file = open_file;
   return 0;
 }
 

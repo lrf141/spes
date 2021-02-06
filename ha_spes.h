@@ -53,6 +53,7 @@
 class Spes_share : public Handler_share {
  public:
   THR_LOCK lock;
+  File table_file;
   Spes_share();
   ~Spes_share() override { thr_lock_delete(&lock); }
 };
