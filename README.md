@@ -4,6 +4,7 @@ simple mysql storage engine
 # Spec
 - supported version: MySQL 8.0.23 only
 - CREATE TABLE, DROP TABLE
+- SELECT, INSERT
 - No Transactional
 
 # How to build
