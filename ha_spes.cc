@@ -216,7 +216,11 @@ static bool spes_is_supported_system_table(const char *db,
   @see
   handler::ha_open() in handler.cc
 */
-
+/**
+ *
+ * @param name table name
+ * @return process status
+ */
 int ha_spes::open(const char *name, int, uint, const dd::Table *) {
   DBUG_TRACE;
 
@@ -284,14 +288,6 @@ int ha_spes::close(void) {
 int ha_spes::write_row(uchar *) {
   DBUG_TRACE;
   ha_statistic_increment(&System_status_var::ha_write_count);
-
-  // TODO: maybe delete my_open function
-  if (share->table_file <= 0) {
-    File open_file;
-    if ((open_file = my_open(share->name, O_RDWR, MYF(0))) < 0)
-      return -1;
-    share->table_file = open_file;
-  }
 
   char att_buf[1024];
   String rowBuffer;
